@@ -718,6 +718,90 @@ const ARCHETYPES=[
    boost:['Performance testing','JMeter','k6','Gatling','LoadRunner','Load testing','Stress testing','Capacity planning','Bottleneck analysis','Dynatrace','Grafana','Playwright','Test automation','GitLab CI/CD','JavaScript','Java'],
    angle:'performance, load and stress testing, complemented by hands-on test automation in Playwright (2–3 years)'}
 ];
+
+/* Per-role bullet variants: truthful REFRAMINGS of the same real facts, by archetype.
+   Matched on company name. If a role has no variant for the chosen archetype, the
+   profile's own bullets are used. Review these for accuracy — they reframe, never invent. */
+const EXP_VARIANTS={
+  'the lottery corporation':{
+    automation:[
+      'Architected an end-to-end automated performance testing framework adopted as the standard approach across engineering squads.',
+      'Integrated the framework into GitLab CI/CD, triggering automated regression runs on every deployment.',
+      'Drove GitLab Duo adoption to auto-generate k6 test scenarios from plain-language specs, removing manual scripting effort.',
+      'Built real-time dashboards (Grafana/InfluxDB and Kibana) for automated test monitoring and log correlation.',
+      'Led a cross-functional engineering team owning quality across web and API platforms.'
+    ],
+    perfauto:[
+      'Led performance and NFR testing strategy across web and API platforms, owning load, stress and benchmark delivery.',
+      'Architected an AI-assisted performance framework (k6) with automated execution through GitLab CI/CD pipelines.',
+      'Used Dynatrace for deep bottleneck analysis — slow DB queries, memory leaks and GC pressure.',
+      'Automated regression performance runs on every deployment via GitLab CI/CD integration.',
+      'Defined performance benchmarks and SLAs with stakeholders; improved resilience under peak load.'
+    ],
+    lead:[
+      'Lead and direct a cross-functional performance engineering team accountable for strategy, delivery and quality of all NFR testing.',
+      'Set the standard performance approach adopted across engineering squads; mentored engineers on tooling and practice.',
+      'Defined performance benchmarks and SLAs in collaboration with stakeholders; drove resilience improvements under peak load.',
+      'Owned stakeholder reporting and the roadmap for quality engineering across the platform.'
+    ]
+  },
+  'visa inc.':{
+    automation:[
+      'Pioneered OpenAPI-driven code generation, auto-generating typed API clients via GitLab Duo and building k6 scenarios on top.',
+      'Authored reusable service wrappers decoupling test logic from generated clients, forming the basis of the current framework.',
+      'Developed in-house Java utilities automating operational health checks across databases and application servers.',
+      'Embedded performance testing early in the SDLC with development and architecture teams.',
+      'Mentored the wider testing team on k6 scripting and AI-assisted automation workflows.'
+    ],
+    perfauto:[
+      'Led capacity planning and performance validation for high-criticality API services on Docker and Kubernetes infrastructure.',
+      'Built k6 scenarios on auto-generated API clients (OpenAPI/GitLab Duo), pairing performance testing with automation.',
+      'Used Dynatrace APM to diagnose and resolve load-testing bottlenecks, with detailed root-cause analysis for dev teams.',
+      'Utilised JMeter for legacy load testing and regression benchmarking with parameterised data sets and response assertions.'
+    ],
+    lead:[
+      'Led capacity planning and performance validation across Risk and Payments platforms.',
+      'Mentored and upskilled the wider testing team on performance best practices and AI-assisted workflows.',
+      'Collaborated with architecture and development teams to embed performance testing early in the SDLC.',
+      'Provided detailed root-cause analysis and recommendations to development teams.'
+    ]
+  },
+  'nab bank':{
+    automation:[
+      'Introduced k6 as an open-source alternative for API load testing and championed its adoption across the team.',
+      'Designed performance test scripts using Gatling for online banking, personal loans and credit-card applications.',
+      'Managed the end-to-end testing lifecycle from planning through execution to reporting against SLAs.'
+    ],
+    perfauto:[
+      'Designed and implemented performance test scripts using Gatling for critical financial applications.',
+      'Introduced k6 as an open-source alternative for API load testing across the team.',
+      'Monitored CPU, memory and GC metrics during execution to surface infrastructure-level issues.'
+    ]
+  },
+  'anz bank':{
+    automation:[
+      'Integrated performance testing into CI/CD pipelines, enforcing quality gates at every release.',
+      'Designed JMeter test plans with distributed execution and custom BeanShell/JSR223 pre-processors for dynamic token handling.',
+      'Automated performance gate validation by integrating JMeter results into CI/CD pipelines.',
+      'Developed comprehensive load scripts with parameterisation, correlation and error handling.'
+    ],
+    perfauto:[
+      'Led performance testing delivery across multiple ANZ programmes, managing onsite and offshore teams.',
+      'Designed and executed JMeter test plans for Load, Stress and Soak testing across banking applications.',
+      'Integrated JMeter into CI/CD pipelines for automated performance gate validation at every release.'
+    ],
+    lead:[
+      'Led performance testing delivery across multiple ANZ programmes; managed onsite and offshore teams.',
+      'Drove process improvements including a new test-data approach that significantly improved cycle time.',
+      'Provided ongoing stakeholder reporting and actionable recommendations to enhance reliability.'
+    ]
+  }
+};
+function variantBullets(company, archId){
+  const c=(company||'').toLowerCase().trim();
+  return (EXP_VARIANTS[c] && archId && EXP_VARIANTS[c][archId]) ? EXP_VARIANTS[c][archId] : null;
+}
+
 function detectArch(jd, forced){
   if(forced && forced!=='auto'){ const a=ARCHETYPES.find(x=>x.id===forced); if(a) return a; }
   const jdl=' '+jd.toLowerCase()+' ';
@@ -763,8 +847,11 @@ function offlineTailor(profile, jd, forced){
   const kwSet=new Set([...top, ...matched.flatMap(s=>s.toLowerCase().split(/\s+/)), ...(arch?arch.sig:[])]
     .filter(w=>w&&w.length>2&&!STOP.has(w)));
 
+  const archId=arch?arch.id:null;
   const exp=(profile.exp||[]).map(e=>{
-    const lines=(Array.isArray(e.bullets)?e.bullets:(e.bullets||'').split('\n')).map(b=>b.trim()).filter(Boolean)
+    const base=variantBullets(e.company, archId)
+      || (Array.isArray(e.bullets)?e.bullets:(e.bullets||'').split('\n'));
+    const lines=base.map(b=>(b||'').trim()).filter(Boolean)
       .map(b=>({text:b, sc:bulletScore(b, kwSet)})).sort((a,b)=>b.sc-a.sc);
     return {title:e.title, company:e.company, dates:e.dates,
       bullets:lines.map(l=>l.text), ov:lines.reduce((s,l)=>s+l.sc,0)};
