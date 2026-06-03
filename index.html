@@ -256,6 +256,10 @@ ol.steps li{margin-bottom:10px}
       <button class="btn" id="searchBtn">Search live jobs</button>
       <span class="muted" style="font-size:12.5px">via Adzuna · aggregates many Australian sources</span>
     </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--muted);cursor:pointer">
+      <input type="checkbox" id="q_relevant" checked style="width:auto">
+      Only show roles whose title matches my keywords (recommended)
+    </label>
 
     <details style="margin-top:14px">
       <summary class="muted" style="cursor:pointer;font-size:13px">⚙ Adzuna connection (keys or proxy)</summary>
@@ -266,7 +270,7 @@ ol.steps li{margin-bottom:10px}
         use, but they'd be readable on a public page.)
       </div>
       <div class="field"><label class="fl">Proxy URL (recommended — keys live in the Worker)</label>
-        <input id="adz_proxy" placeholder="https://atelier-jobs.pawansinha4u.workers.dev/"></div>
+        <input id="adz_proxy" value="https://atelier-jobs.pawansinha4u.workers.dev/" placeholder="https://your-worker.workers.dev"></div>
       <div class="grid2">
         <div class="field"><label class="fl">app_id (leave blank if using a proxy)</label><input id="adz_id" placeholder="only for local/private use"></div>
         <div class="field"><label class="fl">app_key (leave blank if using a proxy)</label><input id="adz_key" placeholder="only for local/private use"></div>
@@ -514,6 +518,7 @@ function buildQuickLinks(){
   links.forEach(([n,u])=>{ const a=document.createElement('a'); a.className='btn ghost sm'; a.href=u; a.target='_blank'; a.rel='noopener'; a.textContent=n+' ↗'; c.appendChild(a); });
 }
 ['q_kw','q_loc'].forEach(id=>document.getElementById(id).addEventListener('input',buildQuickLinks));
+document.getElementById('q_relevant').addEventListener('change',()=>document.getElementById('searchBtn').click());
 
 /* --- Adzuna keys (saved to this browser; override the baked-in defaults) --- */
 function adzKeys(){
@@ -542,11 +547,11 @@ function normAdzuna(r){
 }
 async function searchAdzuna(kw, loc){
   const {id,key,proxy}=adzKeys();
-  const params=`what=${encodeURIComponent(kw||'')}&where=${encodeURIComponent(loc||'Melbourne')}`
-    +`&results_per_page=30&max_days_old=40&sort_by=date`;
+  // Broad fetch (any of the words) so the relevance filter has a real pool to rank from
+  const params=`what_or=${encodeURIComponent(kw||'test')}&where=${encodeURIComponent(loc||'Melbourne')}`
+    +`&results_per_page=50&max_days_old=45&sort_by=date`;
   let target;
   if(proxy){
-    // Worker holds the keys — the browser only sends search terms
     target=proxy.replace(/\/+$/,'')+'?'+params;
   } else {
     if(!id||!key) throw new Error('no-keys');
@@ -577,8 +582,11 @@ document.getElementById('searchBtn').onclick=async()=>{
   const out=document.getElementById('results');
   out.innerHTML=`<div class="empty"><span class="spinner"></span> &nbsp;searching live jobs…</div>`;
   try{
-    const jobs=await searchAdzuna(kw, loc);
-    renderJobs(jobs, `Adzuna · ${jobs.length} live ${kw||'jobs'} roles near ${loc}`);
+    let jobs=await searchAdzuna(kw, loc);
+    const strict=document.getElementById('q_relevant').checked;
+    jobs=rankAndFilter(jobs, kw, strict).slice(0,30);
+    const note = strict ? `${jobs.length} relevant roles` : `${jobs.length} roles (unfiltered)`;
+    renderJobs(jobs, `Adzuna · ${note} for “${kw||'jobs'}” near ${loc}`);
   }catch(e){
     if(String(e.message)==='no-keys'){
       out.innerHTML=`<div class="note">To load live jobs, open <b>“Adzuna connection”</b> above and paste your
@@ -599,9 +607,31 @@ document.getElementById('searchBtn').onclick=async()=>{
   }
 };
 function stripHtml(h){const d=document.createElement('div');d.innerHTML=h||'';return (d.textContent||'').trim();}
+
+// Relevance: title matches score high, description matches score low.
+const ROLE_TERMS=['qa','quality','test','tester','testing','automation','sdet','performance','load','stress','jmeter','k6','gatling','loadrunner','selenium','playwright','cypress','reliability','sre','nfr'];
+function relevance(j, kwTerms){
+  const title=(j.title||'').toLowerCase();
+  const desc=(j.description||'').toLowerCase();
+  const terms=Array.from(new Set([...kwTerms, ...ROLE_TERMS]));
+  let titleScore=0, descScore=0;
+  terms.forEach(t=>{
+    const re=new RegExp('\\b'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+    if(re.test(title)) titleScore+=3;
+    else if(re.test(desc)) descScore+=1;
+  });
+  return {score:titleScore+descScore, titleScore, descScore};
+}
+function rankAndFilter(jobs, kw, strict){
+  const kwTerms=(kw||'').toLowerCase().split(/\s+/).filter(Boolean);
+  const scored=jobs.map(j=>({j, r:relevance(j, kwTerms)}));
+  const kept = strict ? scored.filter(x=>x.r.titleScore>0 || x.r.descScore>=4) : scored;
+  kept.sort((a,b)=>b.r.score-a.r.score);
+  return kept.map(x=>x.j);
+}
 function renderJobs(jobs, caption){
   const out=document.getElementById('results');
-  if(!jobs||!jobs.length){ out.innerHTML=`<div class="empty">No live matches. Try a different keyword, or use the board buttons above.</div>`; return; }
+  if(!jobs||!jobs.length){ out.innerHTML=`<div class="empty">No matches. Try a broader keyword (e.g. just <b>qa</b> or <b>test</b>), untick the title filter, or use the board buttons above.</div>`; return; }
   out.innerHTML = caption ? `<div class="sectit" style="margin-top:0">${esc(caption)}</div>` : '';
   jobs.forEach(j=>{
     const desc=stripHtml(j.description).slice(0,260);
@@ -749,7 +779,7 @@ document.getElementById('dlBtn').onclick=()=>{
 /* ---------------- init ---------------- */
 loadProfile(); buildRolePresets();
 // restore any browser-saved Adzuna keys over the baked-in defaults
-try{ const k=JSON.parse(store.get('atelier_adz')||'null'); if(k&&k.id&&k.key){ document.getElementById('adz_id').value=k.id; document.getElementById('adz_key').value=k.key; if(k.proxy) document.getElementById('adz_proxy').value=k.proxy; } }catch(e){}
+try{ const k=JSON.parse(store.get('atelier_adz')||'null'); if(k){ if(k.id) document.getElementById('adz_id').value=k.id; if(k.key) document.getElementById('adz_key').value=k.key; if(k.proxy) document.getElementById('adz_proxy').value=k.proxy; } }catch(e){}
 document.getElementById('q_kw').value='performance qa test';
 document.getElementById('q_loc').value='Melbourne';
 buildQuickLinks();
