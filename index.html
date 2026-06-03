@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Atelier — your job-hunt console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14110e;
+  --bg2:#1b1713;
+  --surface:#211c17;
+  --surface2:#2a241d;
+  --line:rgba(236,227,212,.10);
+  --line2:rgba(236,227,212,.18);
+  --text:#ece3d4;
+  --muted:#9c8f7b;
+  --faint:#6e6453;
+  --accent:#e0683c;
+  --accent2:#f0a85b;
+  --good:#7bbf6a;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(224,104,60,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(240,168,91,.07), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  font-size:15px;line-height:1.55;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* ---------- Header ---------- */
+header.top{
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(33,28,23,.7), rgba(20,17,14,0));
+  backdrop-filter:blur(6px);
+  position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:baseline;gap:14px;padding:22px 0 4px}
+.brand h1{
+  font-family:'Fraunces',serif;font-weight:900;font-size:30px;letter-spacing:-.5px;margin:0;
+}
+.brand h1 .dot{color:var(--accent)}
+.brand .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.18em}
+nav.tabs{display:flex;gap:4px;padding:8px 0 0;flex-wrap:wrap}
+.tab{
+  background:none;border:none;cursor:pointer;color:var(--muted);
+  font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.04em;
+  text-transform:uppercase;padding:12px 16px;border-bottom:2px solid transparent;
+  transition:color .18s, border-color .18s;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent2);border-color:var(--accent)}
+
+main{padding:34px 0 90px}
+.panel{display:none;animation:rise .4s ease both}
+.panel.active{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ---------- Typo / sections ---------- */
+.lead{font-family:'Fraunces',serif;font-size:clamp(26px,4vw,40px);line-height:1.1;
+  font-weight:600;letter-spacing:-.5px;margin:0 0 6px}
+.lead em{font-style:italic;color:var(--accent2)}
+.sub{color:var(--muted);max-width:62ch;margin:0 0 26px}
+.sectit{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--faint);margin:30px 0 12px;display:flex;align-items:center;gap:10px}
+.sectit::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* ---------- Forms ---------- */
+label.fl{display:block;font-size:12px;color:var(--muted);margin:0 0 5px;
+  font-family:'IBM Plex Mono',monospace;letter-spacing:.03em}
+input,textarea,select{
+  width:100%;background:var(--bg2);border:1px solid var(--line2);color:var(--text);
+  border-radius:10px;padding:11px 13px;font-family:inherit;font-size:14px;outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(224,104,60,.14)}
+textarea{resize:vertical;line-height:1.55}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.field{margin-bottom:14px}
+@media(max-width:680px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  background:var(--accent);color:#1a120c;border:none;border-radius:10px;
+  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;
+  letter-spacing:.04em;text-transform:uppercase;padding:12px 18px;
+  transition:transform .12s, filter .15s;text-decoration:none;
+}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line2)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent2)}
+.btn.sm{padding:8px 13px;font-size:11px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* ---------- Cards ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px}
+.exp{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;position:relative}
+.exp .rm{position:absolute;top:12px;right:12px}
+
+.note{font-size:12.5px;color:var(--muted);background:rgba(240,168,91,.06);
+  border:1px solid rgba(240,168,91,.2);border-radius:10px;padding:12px 14px}
+.note b{color:var(--accent2)}
+.save-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--good);
+  opacity:0;transition:opacity .3s}
+.save-pill.show{opacity:1}
+
+/* ---------- Job results ---------- */
+.quicklinks{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+.job{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;margin-bottom:12px;transition:border-color .15s, transform .12s;
+}
+.job:hover{border-color:var(--line2);transform:translateY(-1px)}
+.job h3{margin:0 0 3px;font-size:16px;font-family:'Fraunces',serif;font-weight:600}
+.job .meta{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.job .meta span{color:var(--accent2)}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);
+  border:1px solid var(--line2);border-radius:999px;padding:3px 9px}
+.spinner{width:18px;height:18px;border:2px solid var(--line2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- Tailor output ---------- */
+.score-wrap{display:flex;align-items:center;gap:18px;margin-bottom:16px;flex-wrap:wrap}
+.score-ring{--p:0;width:96px;height:96px;border-radius:50%;flex:none;
+  background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--line2) 0);
+  display:grid;place-items:center;position:relative}
+.score-ring::before{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--surface)}
+.score-ring b{position:relative;font-family:'Fraunces',serif;font-size:26px}
+.kw{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.kw .chip.miss{border-color:rgba(224,104,60,.4);color:var(--accent2)}
+.kw .chip.hit{border-color:rgba(123,191,106,.4);color:var(--good)}
+
+/* resume preview */
+.resume{background:#fbf6ec;color:#241f18;border-radius:12px;padding:38px 42px;
+  font-family:'IBM Plex Sans',sans-serif;line-height:1.5;border:1px solid var(--line)}
+.resume h2{font-family:'Fraunces',serif;font-size:27px;margin:0 0 2px;color:#1a140d}
+.resume .rcontact{font-size:12.5px;color:#6b5e4b;margin-bottom:16px}
+.resume .rsec{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:#a85a30;border-bottom:1px solid #e2d6c0;
+  padding-bottom:4px;margin:20px 0 10px}
+.resume p{margin:0 0 10px}
+.resume .rjob{margin-bottom:14px}
+.resume .rjob .rh{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.resume .rjob b{font-size:14.5px}
+.resume .rjob .rdate{font-size:12px;color:#8a7c66;font-family:'IBM Plex Mono',monospace}
+.resume ul{margin:6px 0 0;padding-left:18px}
+.resume li{margin-bottom:5px}
+.resume .rskills{display:flex;flex-wrap:wrap;gap:7px}
+.resume .rskill{background:#efe5d2;border-radius:6px;padding:3px 10px;font-size:12.5px}
+
+.muted{color:var(--muted)}
+.hide{display:none!important}
+.empty{color:var(--faint);font-style:italic;padding:30px 0;text-align:center}
+a.inline{color:var(--accent2)}
+hr.s{border:none;border-top:1px solid var(--line);margin:22px 0}
+code.k{font-family:'IBM Plex Mono',monospace;background:var(--bg2);padding:2px 6px;
+  border-radius:5px;font-size:12.5px;color:var(--accent2)}
+ol.steps{padding-left:20px}
+ol.steps li{margin-bottom:10px}
+
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{position:absolute;inset:0;margin:0;padding:0}
+  .resume{border:none;border-radius:0;background:#fff;padding:0}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Atelier<span class="dot">.</span></h1>
+      <span class="tag">your job-hunt console</span>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="profile">01 / Profile</button>
+      <button class="tab" data-tab="jobs">02 / Find jobs</button>
+      <button class="tab" data-tab="tailor">03 / Tailor &amp; apply</button>
+      <button class="tab" data-tab="help">Help</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ PROFILE ============ -->
+<section class="panel active" id="profile">
+  <h2 class="lead">Tell me <em>who you are</em>, once.</h2>
+  <p class="sub">Everything here lives only in your browser. It becomes the raw material for every tailored
+    resume — so the richer the detail, the better the tailoring.</p>
+
+  <div class="sectit">Basics</div>
+  <div class="grid2">
+    <div class="field"><label class="fl">Full name</label><input id="p_name" placeholder="Jordan Avery"></div>
+    <div class="field"><label class="fl">Target role / title</label><input id="p_role" placeholder="Senior Product Designer"></div>
+  </div>
+  <div class="grid3">
+    <div class="field"><label class="fl">Email</label><input id="p_email" placeholder="you@email.com"></div>
+    <div class="field"><label class="fl">Phone</label><input id="p_phone" placeholder="+61 ..."></div>
+    <div class="field"><label class="fl">Location</label><input id="p_loc" placeholder="Melbourne, AU"></div>
+  </div>
+  <div class="grid2">
+    <div class="field"><label class="fl">LinkedIn / portfolio</label><input id="p_link" placeholder="linkedin.com/in/you"></div>
+    <div class="field"><label class="fl">Education</label><input id="p_edu" placeholder="B.Sc Computer Science, University of Melbourne"></div>
+  </div>
+  <div class="field"><label class="fl">Professional summary</label>
+    <textarea id="p_summary" rows="3" placeholder="One or two sentences on who you are and what you do best."></textarea></div>
+  <div class="field"><label class="fl">Skills (comma-separated)</label>
+    <textarea id="p_skills" rows="2" placeholder="React, TypeScript, Figma, user research, design systems, accessibility"></textarea></div>
+
+  <div class="sectit">Experience</div>
+  <div id="expList"></div>
+  <button class="btn ghost sm" id="addExp">+ Add a role</button>
+
+  <hr class="s">
+  <div class="btnrow">
+    <button class="btn" id="saveProfile">Save profile</button>
+    <span class="save-pill" id="savePill">✓ saved to this browser</span>
+  </div>
+</section>
+
+<!-- ============ JOBS ============ -->
+<section class="panel" id="jobs">
+  <h2 class="lead">Find roles <em>worth your time</em>.</h2>
+  <p class="sub">This auto-loads live Australian listings from Adzuna (an aggregator across many job sites).
+    Seek &amp; LinkedIn can't be pulled in — boards block that — so they stay as one-click pre-filled tabs below.</p>
+
+  <div class="card">
+    <div class="sectit" style="margin-top:0">Testing role presets</div>
+    <div class="quicklinks" id="rolePresets"></div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="field"><label class="fl">Keywords / role</label><input id="q_kw" placeholder="performance qa test"></div>
+      <div class="field"><label class="fl">Location</label><input id="q_loc" placeholder="Melbourne"></div>
+    </div>
+    <div class="btnrow">
+      <button class="btn" id="searchBtn">Search live jobs</button>
+      <span class="muted" style="font-size:12.5px">via Adzuna · aggregates many Australian sources</span>
+    </div>
+
+    <details style="margin-top:14px">
+      <summary class="muted" style="cursor:pointer;font-size:13px">⚙ Adzuna API keys (already filled in)</summary>
+      <div class="note" style="margin:12px 0">
+        <b>About these keys.</b> They power the live search and are saved in <i>this browser</i>. Adzuna keys are
+        low-risk (rate-limited, job search only), but if your repo is <i>public</i> anyone viewing the page source
+        could read them — keep the repo <b>private</b>, or clear the fields and they'll be remembered locally only.
+      </div>
+      <div class="grid2">
+        <div class="field"><label class="fl">app_id</label><input id="adz_id" value="4477ad20"></div>
+        <div class="field"><label class="fl">app_key</label><input id="adz_key" value="2190cdabe25ac7de76f25ecd3a4bd248"></div>
+      </div>
+      <div class="field"><label class="fl">Proxy URL (only if live search is blocked — leave blank to start)</label>
+        <input id="adz_proxy" placeholder="https://your-worker.workers.dev"></div>
+    </details>
+
+    <div class="sectit" style="margin-top:18px">Boards Adzuna can't reach — opens pre-filled in a new tab</div>
+    <div class="quicklinks" id="quickLinks"></div>
+  </div>
+
+  <div id="results" style="margin-top:22px"></div>
+</section>
+
+<!-- ============ TAILOR ============ -->
+<section class="panel" id="tailor">
+  <h2 class="lead">Bend your resume <em>to the role</em>.</h2>
+  <p class="sub">Paste a job description (or send one over from the search). I'll score the match, surface the
+    keywords you're missing, and reshape your resume around what this employer is asking for.</p>
+
+  <div class="field"><label class="fl">Job title @ company (optional)</label><input id="t_title" placeholder="Senior Product Designer @ Canva"></div>
+  <div class="field"><label class="fl">Job description</label>
+    <textarea id="t_jd" rows="8" placeholder="Paste the full job description here..."></textarea></div>
+
+  <details style="margin-bottom:16px">
+    <summary class="muted" style="cursor:pointer;font-size:13px">⚙ Optional: use your own Anthropic API key for AI-written bullets</summary>
+    <div class="note" style="margin:12px 0">
+      <b>Heads up on security.</b> A key typed here is stored in <i>this browser only</i>. Never commit it to your
+      repo and never put it in the code of a <i>public</i> GitHub Pages site — anyone could read it. Without a key,
+      tailoring still works using smart keyword matching; the key just lets Claude rewrite your summary and bullets.
+    </div>
+    <div class="field"><label class="fl">Anthropic API key (sk-ant-...)</label><input id="t_key" type="password" placeholder="leave blank to use offline tailoring"></div>
+  </details>
+
+  <div class="btnrow">
+    <button class="btn" id="genBtn">Generate tailored resume</button>
+    <span id="genStatus" class="muted" style="font-size:12.5px"></span>
+  </div>
+
+  <div id="tailorOut" class="hide" style="margin-top:26px">
+    <div class="score-wrap">
+      <div class="score-ring" id="ring"><b id="scoreNum">0</b></div>
+      <div style="flex:1;min-width:220px">
+        <div class="sectit" style="margin:0 0 8px">Keyword match</div>
+        <div class="kw" id="kwHits"></div>
+        <div class="sectit" style="margin:14px 0 8px">Worth adding if true</div>
+        <div class="kw" id="kwMiss"></div>
+      </div>
+    </div>
+
+    <div class="btnrow" style="margin:18px 0">
+      <button class="btn" id="printBtn">Print / Save as PDF</button>
+      <button class="btn ghost" id="dlBtn">Download HTML</button>
+      <button class="btn ghost" id="copyBtn">Copy as text</button>
+      <a class="btn ghost" id="applyBtn" target="_blank" rel="noopener">Open the posting →</a>
+    </div>
+
+    <div id="printArea"><div class="resume" id="resume"></div></div>
+  </div>
+</section>
+
+<!-- ============ HELP ============ -->
+<section class="panel" id="help">
+  <h2 class="lead">Put it <em>online</em> in five minutes.</h2>
+  <p class="sub">This whole console is one file. Host it free on GitHub Pages — no server, no build tools.</p>
+
+  <div class="sectit">Deploy to GitHub Pages</div>
+  <ol class="steps">
+    <li>Create a new GitHub repository (public or private — Pages works on both for personal accounts).</li>
+    <li>Add this file to it, renamed to <code class="k">index.html</code>.</li>
+    <li>In the repo, go to <b>Settings → Pages</b>, set <b>Source</b> to your main branch, root folder, and save.</li>
+    <li>Wait ~1 minute. Your site is live at <code class="k">https://&lt;you&gt;.github.io/&lt;repo&gt;/</code>.</li>
+    <li>Your profile saves in your browser. To carry it to another device, just re-enter it (nothing is uploaded anywhere).</li>
+  </ol>
+
+  <div class="sectit">Honest notes</div>
+  <p class="muted" style="max-width:64ch">
+    <b style="color:var(--accent2)">On "auto-apply":</b> I deliberately didn't build a bot that submits applications for you.
+    Seek, LinkedIn, Indeed and Workday all prohibit automated submissions in their terms — doing it risks getting your
+    accounts banned, and mass-blasting is treated as spam by recruiters, which lowers your odds. This tool gets you to the
+    real "Submit" button with a resume tuned for that role, which is where the actual leverage is.
+  </p>
+  <p class="muted" style="max-width:64ch">
+    <b style="color:var(--accent2)">On live search:</b> the in-app search uses Adzuna, an aggregator that pools
+    listings from many Australian sources, so it auto-loads matching roles on open. Seek and LinkedIn block
+    aggregation, so they aren't in those results — use the pre-filled board buttons for them. If live search fails
+    on your deployed page it's almost always CORS (your browser blocking the Adzuna call); a tiny free proxy fixes it.
+  </p>
+  <p class="muted" style="max-width:64ch">
+    <b style="color:var(--accent2)">On your Adzuna keys:</b> low-risk (rate-limited, search only) but readable in a
+    public page's source. Keep this repo private, or clear the key fields and they'll live in your browser only.
+  </p>
+  <p class="muted" style="max-width:64ch">
+    <b style="color:var(--accent2)">On the API key:</b> it's optional and only for AI-written bullets. Keep it out of any
+    public repo. For a private personal tool it's fine to paste at runtime.
+  </p>
+</section>
+
+</main>
+
+<script>
+/* ---------------- safe storage (works on GitHub Pages; falls back in sandboxes) ---------------- */
+const mem = {};
+const store = {
+  get(k){ try{ const v = localStorage.getItem(k); return v==null?(k in mem?mem[k]:null):v; }catch(e){ return k in mem?mem[k]:null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ mem[k]=v; } }
+};
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+function goTab(id){ document.querySelector(`.tab[data-tab="${id}"]`).click(); }
+
+/* ---------------- profile ---------------- */
+const PF = ['name','role','email','phone','loc','link','edu','summary','skills'];
+const DEFAULT_PROFILE = {
+  name:'Pawan Sinha',
+  role:'Lead Performance Engineer',
+  email:'pawansinha4u@gmail.com',
+  phone:'+61-403967936',
+  loc:'Melbourne, Australia',
+  link:'https://www.linkedin.com/in/pawan-sinha-b5a356b6/',
+  edu:'Bachelor of Computer Engineering — KLS GIT, Belgaum | 2009 – 2013',
+  summary:'Lead Performance Engineer with over 10 years of hands-on experience across the full performance testing lifecycle — strategy, tooling, execution, and bottleneck diagnosis. Deep expertise with k6, JMeter, Gatling, and LoadRunner across large-scale banking, payments, and financial platforms. Built a proprietary AI-powered performance testing framework combining OpenAPI-driven code generation, GitLab CI/CD, GitLab Duo scenario generation, and real-time observability via Grafana, InfluxDB, and Kibana. Skilled at infrastructure-level diagnosis using Dynatrace APM, thread and heap dump analysis, and system metrics.',
+  skills:'k6, JMeter, Gatling, LoadRunner, Performance testing, Load testing, Stress testing, Soak testing, Endurance testing, Capacity planning, Bottleneck analysis, SLA validation, Dynatrace, Grafana, InfluxDB, Kibana, New Relic, Splunk, GitLab CI/CD, GitLab Duo, GitHub Copilot, Jenkins, Docker, Kubernetes, Shell scripting, Git, OpenAPI/Swagger, REST API testing, Test automation, Java, JavaScript, GCP, AWS, Mentoring',
+  exp:[
+    { title:'Lead Performance Engineer', company:'The Lottery Corporation', dates:'Jan 2025 – Present',
+      bullets:[
+        'Lead and direct a cross-functional performance engineering team accountable for strategy, delivery, and quality of all NFR testing across web and API based platforms.',
+        'Architected and delivered an end-to-end AI-powered performance testing framework, adopted as the standard approach across engineering squads.',
+        'Drove GitLab Duo adoption for AI-generated k6 test scenarios; engineers specify APIs, volumes, and assertions in plain language and Duo produces complete scenarios in minutes.',
+        'Built real-time observability with Grafana dashboards backed by InfluxDB for live k6 metrics and Kibana dashboards for application log correlation.',
+        'Used Dynatrace for deep bottleneck analysis, identifying slow DB queries, memory leaks, and GC pressure that traditional monitoring missed.',
+        'Defined performance benchmarks and SLAs with stakeholders; improved system resilience under peak loads through iterative tuning.',
+        'Integrated the framework into GitLab CI/CD for automated regression performance runs on every deployment.'
+      ].join('\n') },
+    { title:'Performance Engineer', company:'VISA Inc.', dates:'Sep 2022 – Dec 2024',
+      bullets:[
+        'Led capacity planning and performance validation for multiple high-criticality API services across Risk and Payments platforms on Docker and Kubernetes infrastructure.',
+        'Pioneered OpenAPI-driven code generation; ingested Swagger specs via GitLab Duo to auto-generate typed API clients, authored service wrappers, and built k6 scenarios.',
+        'Leveraged Dynatrace APM to diagnose and resolve load testing bottlenecks, providing detailed root cause analysis to development teams.',
+        'Developed in-house Java utilities to automate operational health checks across databases, performance servers, and application servers.',
+        'Mentored the wider testing team on performance testing best practices, k6 scripting, and AI-assisted workflows.',
+        'Utilised JMeter for legacy service load testing and regression benchmarking with parameterised CSV data sets, custom thread groups, and response assertions to validate API SLAs.'
+      ].join('\n') },
+    { title:'Senior Performance Tester', company:'NAB Bank', dates:'Mar 2022 – Jul 2022',
+      bullets:[
+        'Designed and implemented performance test scripts using Gatling for critical financial applications including online banking, personal loans, and credit cards.',
+        'Introduced k6 as an open-source alternative for API load testing and championed its adoption across the team.',
+        'Managed the end-to-end performance testing lifecycle from planning through execution to reporting, ensuring SLA and benchmark compliance.',
+        'Monitored and analysed CPU, memory, and GC metrics during execution to surface infrastructure-level issues.'
+      ].join('\n') },
+    { title:'Performance Tester', company:'ANZ Bank', dates:'Sep 2015 – Feb 2022',
+      bullets:[
+        'Led performance testing delivery across multiple ANZ programmes; managed onsite and offshore teams for work distribution and collaboration.',
+        'Integrated performance testing into CI/CD pipelines with quality gates at every release.',
+        'Developed comprehensive load scripts for Load, Stress, and Endurance tests including parameterisation, correlation, and error handling.',
+        'Designed and executed JMeter test plans with distributed execution across multiple load injectors, custom BeanShell/JSR223 pre-processors for dynamic token handling, and CI/CD integration for automated performance gates.',
+        'Provided stakeholder reporting and actionable recommendations to improve system performance and reliability.'
+      ].join('\n') },
+    { title:'Tester', company:'IMS Health', dates:'Nov 2013 – Aug 2015',
+      bullets:[
+        'Developed and recorded performance scripts with parameterisation, correlation, and error checks across multiple application types.',
+        'Designed and executed load, stress, endurance, and resilience scenarios simulating realistic user loads.',
+        'Monitored CPU, memory, and system resources during execution and collaborated with dev teams on tuning.',
+        'Used HP BSM live monitoring to observe application health during test runs.'
+      ].join('\n') }
+  ]
+};
+function loadProfile(){
+  let raw=store.get('atelier_profile'); let data;
+  try{ data = raw ? JSON.parse(raw) : DEFAULT_PROFILE; }catch(e){ data = DEFAULT_PROFILE; }
+  PF.forEach(f=>{ const el=document.getElementById('p_'+f); if(el&&data[f]!=null) el.value=data[f]; });
+  renderExp(data.exp||[]);
+}
+function gatherProfile(){
+  const d={}; PF.forEach(f=>d[f]=document.getElementById('p_'+f).value.trim());
+  d.exp=[...document.querySelectorAll('.exp')].map(e=>({
+    title:e.querySelector('.e_title').value.trim(),
+    company:e.querySelector('.e_company').value.trim(),
+    dates:e.querySelector('.e_dates').value.trim(),
+    bullets:e.querySelector('.e_bullets').value.trim()
+  })).filter(x=>x.title||x.company||x.bullets);
+  return d;
+}
+function expTemplate(x={}){
+  const d=document.createElement('div'); d.className='exp';
+  d.innerHTML=`
+    <button class="btn ghost sm rm">remove</button>
+    <div class="grid2">
+      <div class="field"><label class="fl">Title</label><input class="e_title" value="${esc(x.title)}" placeholder="Product Designer"></div>
+      <div class="field"><label class="fl">Company</label><input class="e_company" value="${esc(x.company)}" placeholder="Acme Co."></div>
+    </div>
+    <div class="field"><label class="fl">Dates</label><input class="e_dates" value="${esc(x.dates)}" placeholder="2021 – present"></div>
+    <div class="field"><label class="fl">What you did (one bullet per line)</label>
+      <textarea class="e_bullets" rows="4" placeholder="Led redesign of checkout, lifting conversion 18%&#10;Built a 60-component design system used by 4 teams">${esc(x.bullets)}</textarea></div>`;
+  d.querySelector('.rm').onclick=()=>d.remove();
+  return d;
+}
+function renderExp(list){
+  const c=document.getElementById('expList'); c.innerHTML='';
+  (list.length?list:[{}]).forEach(x=>c.appendChild(expTemplate(x)));
+}
+document.getElementById('addExp').onclick=()=>document.getElementById('expList').appendChild(expTemplate());
+document.getElementById('saveProfile').onclick=()=>{
+  store.set('atelier_profile', JSON.stringify(gatherProfile()));
+  const p=document.getElementById('savePill'); p.classList.add('show'); setTimeout(()=>p.classList.remove('show'),2200);
+};
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* ---------------- job search ---------------- */
+const ROLE_PRESETS = [
+  ['QA Engineer','qa engineer test'],
+  ['Test Automation / SDET','automation sdet selenium'],
+  ['Performance Tester','performance load jmeter'],
+  ['Manual QA','manual qa testing'],
+  ['QA Lead','qa lead test'],
+  ['API Testing','api testing postman'],
+  ['All testing roles','qa test automation performance sdet']
+];
+function buildRolePresets(){
+  const c=document.getElementById('rolePresets'); c.innerHTML='';
+  ROLE_PRESETS.forEach(([label,kw])=>{
+    const b=document.createElement('button'); b.className='btn ghost sm'; b.textContent=label;
+    b.onclick=()=>{ document.getElementById('q_kw').value=kw; buildQuickLinks(); document.getElementById('searchBtn').click(); };
+    c.appendChild(b);
+  });
+}
+function buildQuickLinks(){
+  const kw=encodeURIComponent(document.getElementById('q_kw').value.trim()||document.getElementById('p_role').value.trim()||'jobs');
+  const loc=document.getElementById('q_loc').value.trim()||'Melbourne';
+  const links=[
+    ['Seek', `https://www.seek.com.au/${kw}-jobs/in-${encodeURIComponent(loc.replace(/\s+/g,'-'))}`],
+    ['LinkedIn', `https://www.linkedin.com/jobs/search/?keywords=${kw}&location=${encodeURIComponent(loc)}`],
+    ['Indeed', `https://au.indeed.com/jobs?q=${kw}&l=${encodeURIComponent(loc)}`],
+    ['Google Jobs', `https://www.google.com/search?q=${kw}+jobs+${encodeURIComponent(loc)}&ibp=htl;jobs`]
+  ];
+  const c=document.getElementById('quickLinks'); c.innerHTML='';
+  links.forEach(([n,u])=>{ const a=document.createElement('a'); a.className='btn ghost sm'; a.href=u; a.target='_blank'; a.rel='noopener'; a.textContent=n+' ↗'; c.appendChild(a); });
+}
+['q_kw','q_loc'].forEach(id=>document.getElementById(id).addEventListener('input',buildQuickLinks));
+
+/* --- Adzuna keys (saved to this browser; override the baked-in defaults) --- */
+function adzKeys(){
+  let id=document.getElementById('adz_id').value.trim();
+  let key=document.getElementById('adz_key').value.trim();
+  let proxy=document.getElementById('adz_proxy').value.trim();
+  if(id&&key) store.set('atelier_adz', JSON.stringify({id,key,proxy}));
+  return {id,key,proxy};
+}
+['adz_id','adz_key','adz_proxy'].forEach(id=>document.getElementById(id).addEventListener('input',adzKeys));
+
+function fmtSalary(j){
+  const a=j.salary_min, b=j.salary_max;
+  if(!a&&!b) return '';
+  const f=n=>'$'+Math.round(n/1000)+'k';
+  if(a&&b&&a!==b) return f(a)+'–'+f(b);
+  return f(a||b);
+}
+function normAdzuna(r){
+  return {
+    title:r.title||'', company_name:(r.company&&r.company.display_name)||'',
+    location:(r.location&&r.location.display_name)||'', description:r.description||'',
+    url:r.redirect_url||'', salary:fmtSalary(r),
+    tags:[r.category&&r.category.label, r.contract_time, r.contract_type].filter(Boolean)
+  };
+}
+async function searchAdzuna(kw, loc){
+  const {id,key,proxy}=adzKeys();
+  if(!id||!key) throw new Error('no-keys');
+  const u=`https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${encodeURIComponent(id)}`
+    +`&app_key=${encodeURIComponent(key)}&results_per_page=30&max_days_old=40&sort_by=date`
+    +`&what=${encodeURIComponent(kw||'')}&where=${encodeURIComponent(loc||'Melbourne')}&content-type=application/json`;
+  const target = proxy ? proxy.replace(/\/+$/,'')+'?url='+encodeURIComponent(u) : u;
+  const r=await fetch(target);
+  if(!r.ok) throw new Error('Adzuna '+r.status);
+  const data=await r.json();
+  return (data.results||[]).map(normAdzuna);
+}
+async function searchArbeitnow(kw){
+  const r=await fetch('https://www.arbeitnow.com/api/job-board-api');
+  if(!r.ok) throw new Error('feed');
+  const data=await r.json(); let jobs=(data.data||[]).map(j=>({
+    title:j.title, company_name:j.company_name, location:j.location, description:j.description,
+    url:j.url, salary:'', tags:(j.tags||[]).slice(0,4)
+  }));
+  if(kw){ const terms=kw.toLowerCase().split(/\s+/).filter(Boolean);
+    jobs=jobs.filter(j=>{ const hay=(j.title+' '+j.description+' '+j.tags.join(' ')).toLowerCase();
+      return terms.some(t=>new RegExp('\\b'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).test(hay)); }); }
+  return jobs;
+}
+
+document.getElementById('searchBtn').onclick=async()=>{
+  const kw=document.getElementById('q_kw').value.trim()||document.getElementById('p_role').value.trim();
+  const loc=document.getElementById('q_loc').value.trim()||'Melbourne';
+  const out=document.getElementById('results');
+  out.innerHTML=`<div class="empty"><span class="spinner"></span> &nbsp;searching live jobs…</div>`;
+  try{
+    const jobs=await searchAdzuna(kw, loc);
+    renderJobs(jobs, `Adzuna · ${jobs.length} live ${kw||'jobs'} roles near ${loc}`);
+  }catch(e){
+    // fall back to the free feed, then to guidance
+    try{
+      const jobs=await searchArbeitnow(kw);
+      renderJobs(jobs.slice(0,25), 'Adzuna unavailable — showing the free remote feed instead');
+    }catch(e2){
+      out.innerHTML=`<div class="note">Couldn't reach live search right now. In this preview window that's expected
+        (the sandbox blocks outside calls) — it should work on your deployed page. If it still fails there, it's almost
+        always <b>CORS</b> (the browser blocking Adzuna); tell me and I'll give you a tiny free proxy to fix it.
+        Meanwhile the Seek/LinkedIn/Indeed buttons always work.</div>`;
+    }
+  }
+};
+function stripHtml(h){const d=document.createElement('div');d.innerHTML=h||'';return (d.textContent||'').trim();}
+function renderJobs(jobs, caption){
+  const out=document.getElementById('results');
+  if(!jobs||!jobs.length){ out.innerHTML=`<div class="empty">No live matches. Try a different keyword, or use the board buttons above.</div>`; return; }
+  out.innerHTML = caption ? `<div class="sectit" style="margin-top:0">${esc(caption)}</div>` : '';
+  jobs.forEach(j=>{
+    const desc=stripHtml(j.description).slice(0,260);
+    const tags=(j.tags||[]).slice(0,5);
+    const el=document.createElement('div'); el.className='job';
+    el.innerHTML=`
+      <h3>${esc(j.title)}</h3>
+      <div class="meta"><span>${esc(j.company_name||'')}</span> · ${esc(j.location||'')}${j.salary?' · '+esc(j.salary):''}</div>
+      <div class="tags">${tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
+      <p class="muted" style="font-size:13px">${esc(desc)}…</p>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn sm">Tailor my resume →</button>
+        <a class="btn ghost sm" href="${esc(j.url)}" target="_blank" rel="noopener">View posting ↗</a>
+      </div>`;
+    el.querySelector('button').onclick=()=>{
+      document.getElementById('t_title').value=`${j.title} @ ${j.company_name||''}`.trim();
+      document.getElementById('t_jd').value=`${j.title}\n${stripHtml(j.description)}`;
+      document.getElementById('applyBtn').href=j.url||'#';
+      document.getElementById('genStatus').textContent='Tip: this is Adzuna\u2019s summary — open the posting and paste the full description for the sharpest tailoring.';
+      goTab('tailor');
+    };
+    out.appendChild(el);
+  });
+}
+
+/* ---------------- tailoring ---------------- */
+const STOP=new Set(('a an and or the to of in for with on at by from as is are be we you your our their this that will work team role job ableto using strong experience years etc you’ll youll who what they have has had not but if then so it its into per across within across plus also more most who whom whose about over under between out up down').split(/\s+/));
+function keywords(text){
+  const counts={};
+  (text.toLowerCase().match(/[a-z][a-z+#.\-]{2,}/g)||[]).forEach(w=>{
+    w=w.replace(/[.\-]+$/,''); if(w.length<3||STOP.has(w)) return; counts[w]=(counts[w]||0)+1;
+  });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+}
+function offlineTailor(profile, jd){
+  const top=keywords(jd).slice(0,28);
+  const skills=(profile.skills||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const profText=(profile.summary+' '+profile.skills+' '+(profile.exp||[]).map(e=>e.title+' '+e.bullets).join(' ')).toLowerCase();
+  const hits=top.filter(t=>profText.includes(t));
+  const miss=top.filter(t=>!profText.includes(t)).slice(0,10);
+  const score=Math.min(99, Math.round( (hits.length/Math.max(8,Math.min(top.length,20)))*100 ));
+  // reorder skills: matched first
+  const jdl=jd.toLowerCase();
+  skills.sort((a,b)=> (jdl.includes(b.toLowerCase())?1:0)-(jdl.includes(a.toLowerCase())?1:0));
+  // rank experiences by overlap
+  const exp=(profile.exp||[]).map(e=>{
+    const t=(e.title+' '+e.bullets).toLowerCase();
+    const ov=top.filter(k=>t.includes(k)).length;
+    return {...e, ov};
+  }).sort((a,b)=>b.ov-a.ov);
+  const role=(document.getElementById('t_title').value.split('@')[0].trim())||profile.role||'this role';
+  const summary = profile.summary
+    ? profile.summary + (hits.length?` Strengths aligned to this role: ${hits.slice(0,6).join(', ')}.`:'')
+    : `${profile.role||'Professional'} with strengths in ${hits.slice(0,6).join(', ')||skills.slice(0,5).join(', ')}.`;
+  return {score, hits:hits.slice(0,14), miss, skills, exp, summary};
+}
+async function aiTailor(profile, jd, key){
+  const sys=`You tailor resumes. Return ONLY valid JSON, no markdown, shaped exactly as:
+{"summary":"2-3 sentence summary tailored to the job","skills":["ordered, most relevant first"],"experience":[{"title":"","company":"","dates":"","bullets":["rewritten, achievement-focused, keyword-aligned"]}]}`;
+  const user=`CANDIDATE PROFILE (JSON):\n${JSON.stringify(profile)}\n\nJOB DESCRIPTION:\n${jd}\n\nRewrite truthfully using only facts present in the profile; never invent employers, titles or metrics. Mirror the job's language where the candidate genuinely matches.`;
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:sys,messages:[{role:'user',content:user}]})
+  });
+  if(!r.ok){ const t=await r.text(); throw new Error('API '+r.status+': '+t.slice(0,160)); }
+  const data=await r.json();
+  const txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();
+  return JSON.parse(txt);
+}
+function ringSet(p){ const r=document.getElementById('ring'); r.style.setProperty('--p',p); document.getElementById('scoreNum').textContent=p; }
+
+document.getElementById('genBtn').onclick=async()=>{
+  const jd=document.getElementById('t_jd').value.trim();
+  const status=document.getElementById('genStatus');
+  if(!jd){ status.textContent='Paste a job description first.'; return; }
+  let profile=gatherProfile();
+  if(!profile.name){ status.innerHTML='Add your name in the Profile tab (01) first.'; return; }
+
+  const analysis=offlineTailor(profile, jd);
+  const key=document.getElementById('t_key').value.trim();
+  let content={summary:analysis.summary, skills:analysis.skills, experience:analysis.exp};
+
+  if(key){
+    status.innerHTML='<span class="spinner"></span> Claude is rewriting your resume…';
+    try{
+      const ai=await aiTailor(profile, jd, key);
+      content={
+        summary: ai.summary||analysis.summary,
+        skills: (ai.skills&&ai.skills.length)?ai.skills:analysis.skills,
+        experience: (ai.experience&&ai.experience.length)?ai.experience:analysis.exp
+      };
+      status.textContent='Tailored with AI.';
+    }catch(e){ status.textContent='AI step failed ('+e.message+') — used offline tailoring instead.'; }
+  } else { status.textContent='Tailored offline (no key used).'; }
+
+  // render score + keywords
+  ringSet(analysis.score);
+  document.getElementById('kwHits').innerHTML = analysis.hits.length
+    ? analysis.hits.map(k=>`<span class="chip hit">${esc(k)}</span>`).join('') : '<span class="muted">—</span>';
+  document.getElementById('kwMiss').innerHTML = analysis.miss.length
+    ? analysis.miss.map(k=>`<span class="chip miss">${esc(k)}</span>`).join('') : '<span class="muted">none — strong overlap</span>';
+
+  renderResume(profile, content);
+  document.getElementById('tailorOut').classList.remove('hide');
+  document.getElementById('tailorOut').scrollIntoView({behavior:'smooth'});
+};
+
+function renderResume(p, c){
+  const contact=[p.email,p.phone,p.loc,p.link].filter(Boolean).join('  ·  ');
+  const skills=(c.skills||[]).map(s=>`<span class="rskill">${esc(s)}</span>`).join('');
+  const exp=(c.experience||[]).map(e=>{
+    const bl=(Array.isArray(e.bullets)?e.bullets:(e.bullets||'').split('\n')).map(b=>b.trim()).filter(Boolean);
+    return `<div class="rjob"><div class="rh"><b>${esc(e.title||'')}${e.company?' — '+esc(e.company):''}</b>
+      <span class="rdate">${esc(e.dates||'')}</span></div>
+      <ul>${bl.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`;
+  }).join('');
+  document.getElementById('resume').innerHTML=`
+    <h2>${esc(p.name||'Your Name')}</h2>
+    <div class="rcontact">${esc(contact)}</div>
+    ${c.summary?`<div class="rsec">Summary</div><p>${esc(c.summary)}</p>`:''}
+    ${skills?`<div class="rsec">Skills</div><div class="rskills">${skills}</div>`:''}
+    ${exp?`<div class="rsec">Experience</div>${exp}`:''}
+    ${p.edu?`<div class="rsec">Education</div><p>${esc(p.edu)}</p>`:''}`;
+}
+
+document.getElementById('printBtn').onclick=()=>window.print();
+document.getElementById('copyBtn').onclick=()=>{
+  const t=document.getElementById('resume').innerText;
+  navigator.clipboard.writeText(t).then(()=>{document.getElementById('genStatus').textContent='Copied to clipboard.';});
+};
+document.getElementById('dlBtn').onclick=()=>{
+  const html=`<!doctype html><meta charset=utf-8><title>Resume</title>
+  <style>body{font-family:Georgia,serif;max-width:760px;margin:40px auto;padding:0 24px;color:#241f18;line-height:1.5}
+  h2{font-size:28px;margin:0 0 2px}.rcontact{color:#6b5e4b;font-size:13px;margin-bottom:18px}
+  .rsec{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#a85a30;border-bottom:1px solid #ddd;padding-bottom:4px;margin:22px 0 10px}
+  .rskill{display:inline-block;background:#efe5d2;border-radius:6px;padding:3px 10px;font-size:13px;margin:0 6px 6px 0}
+  .rh{display:flex;justify-content:space-between}.rdate{color:#8a7c66;font-size:12px}ul{padding-left:18px}</style>`
+  + document.getElementById('resume').innerHTML;
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='tailored-resume.html'; a.click();
+};
+
+/* ---------------- init ---------------- */
+loadProfile(); buildRolePresets();
+// restore any browser-saved Adzuna keys over the baked-in defaults
+try{ const k=JSON.parse(store.get('atelier_adz')||'null'); if(k&&k.id&&k.key){ document.getElementById('adz_id').value=k.id; document.getElementById('adz_key').value=k.key; if(k.proxy) document.getElementById('adz_proxy').value=k.proxy; } }catch(e){}
+document.getElementById('q_kw').value='performance qa test';
+document.getElementById('q_loc').value='Melbourne';
+buildQuickLinks();
+// auto-load jobs so the page opens with results, no manual searching
+document.getElementById('searchBtn').click();
+</script>
+</body>
+</html>
