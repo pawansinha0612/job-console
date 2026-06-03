@@ -258,18 +258,19 @@ ol.steps li{margin-bottom:10px}
     </div>
 
     <details style="margin-top:14px">
-      <summary class="muted" style="cursor:pointer;font-size:13px">⚙ Adzuna API keys (already filled in)</summary>
+      <summary class="muted" style="cursor:pointer;font-size:13px">⚙ Adzuna connection (keys or proxy)</summary>
       <div class="note" style="margin:12px 0">
-        <b>About these keys.</b> They power the live search and are saved in <i>this browser</i>. Adzuna keys are
-        low-risk (rate-limited, job search only), but if your repo is <i>public</i> anyone viewing the page source
-        could read them — keep the repo <b>private</b>, or clear the fields and they'll be remembered locally only.
+        <b>Keep your keys off the page.</b> Recommended: deploy the Cloudflare Worker, store your keys there as
+        environment variables, and paste only the <b>Proxy URL</b> below — leave app_id / app_key <b>blank</b>. Your
+        keys then never appear in the browser or page source. (Typing keys directly here also works for local/private
+        use, but they'd be readable on a public page.)
       </div>
-      <div class="grid2">
-        <div class="field"><label class="fl">app_id</label><input id="adz_id" value="4477ad20"></div>
-        <div class="field"><label class="fl">app_key</label><input id="adz_key" value="2190cdabe25ac7de76f25ecd3a4bd248"></div>
-      </div>
-      <div class="field"><label class="fl">Proxy URL (only if live search is blocked — leave blank to start)</label>
+      <div class="field"><label class="fl">Proxy URL (recommended — keys live in the Worker)</label>
         <input id="adz_proxy" placeholder="https://your-worker.workers.dev"></div>
+      <div class="grid2">
+        <div class="field"><label class="fl">app_id (leave blank if using a proxy)</label><input id="adz_id" placeholder="only for local/private use"></div>
+        <div class="field"><label class="fl">app_key (leave blank if using a proxy)</label><input id="adz_key" placeholder="only for local/private use"></div>
+      </div>
     </details>
 
     <div class="sectit" style="margin-top:18px">Boards Adzuna can't reach — opens pre-filled in a new tab</div>
@@ -519,7 +520,7 @@ function adzKeys(){
   let id=document.getElementById('adz_id').value.trim();
   let key=document.getElementById('adz_key').value.trim();
   let proxy=document.getElementById('adz_proxy').value.trim();
-  if(id&&key) store.set('atelier_adz', JSON.stringify({id,key,proxy}));
+  store.set('atelier_adz', JSON.stringify({id,key,proxy}));
   return {id,key,proxy};
 }
 ['adz_id','adz_key','adz_proxy'].forEach(id=>document.getElementById(id).addEventListener('input',adzKeys));
@@ -541,11 +542,17 @@ function normAdzuna(r){
 }
 async function searchAdzuna(kw, loc){
   const {id,key,proxy}=adzKeys();
-  if(!id||!key) throw new Error('no-keys');
-  const u=`https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${encodeURIComponent(id)}`
-    +`&app_key=${encodeURIComponent(key)}&results_per_page=30&max_days_old=40&sort_by=date`
-    +`&what=${encodeURIComponent(kw||'')}&where=${encodeURIComponent(loc||'Melbourne')}&content-type=application/json`;
-  const target = proxy ? proxy.replace(/\/+$/,'')+'?url='+encodeURIComponent(u) : u;
+  const params=`what=${encodeURIComponent(kw||'')}&where=${encodeURIComponent(loc||'Melbourne')}`
+    +`&results_per_page=30&max_days_old=40&sort_by=date`;
+  let target;
+  if(proxy){
+    // Worker holds the keys — the browser only sends search terms
+    target=proxy.replace(/\/+$/,'')+'?'+params;
+  } else {
+    if(!id||!key) throw new Error('no-keys');
+    target=`https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${encodeURIComponent(id)}`
+      +`&app_key=${encodeURIComponent(key)}&${params}&content-type=application/json`;
+  }
   const r=await fetch(target);
   if(!r.ok) throw new Error('Adzuna '+r.status);
   const data=await r.json();
@@ -573,6 +580,12 @@ document.getElementById('searchBtn').onclick=async()=>{
     const jobs=await searchAdzuna(kw, loc);
     renderJobs(jobs, `Adzuna · ${jobs.length} live ${kw||'jobs'} roles near ${loc}`);
   }catch(e){
+    if(String(e.message)==='no-keys'){
+      out.innerHTML=`<div class="note">To load live jobs, open <b>“Adzuna connection”</b> above and paste your
+        <b>Proxy URL</b> (recommended) — or, for local use, your app_id and app_key. The Seek / LinkedIn / Indeed
+        buttons work right now regardless.</div>`;
+      return;
+    }
     // fall back to the free feed, then to guidance
     try{
       const jobs=await searchArbeitnow(kw);
@@ -580,7 +593,7 @@ document.getElementById('searchBtn').onclick=async()=>{
     }catch(e2){
       out.innerHTML=`<div class="note">Couldn't reach live search right now. In this preview window that's expected
         (the sandbox blocks outside calls) — it should work on your deployed page. If it still fails there, it's almost
-        always <b>CORS</b> (the browser blocking Adzuna); tell me and I'll give you a tiny free proxy to fix it.
+        always <b>CORS</b> (the browser blocking Adzuna); deploy the Worker proxy and paste its URL above.
         Meanwhile the Seek/LinkedIn/Indeed buttons always work.</div>`;
     }
   }
