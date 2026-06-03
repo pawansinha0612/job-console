@@ -304,6 +304,10 @@ ol.steps li{margin-bottom:10px}
       <option value="data">Data / ETL Test</option>
       <option value="perfauto">Performance + Automation (Playwright)</option>
     </select></div>
+  <label style="display:flex;align-items:center;gap:8px;margin:-4px 0 14px;font-size:13px;color:var(--muted);cursor:pointer">
+    <input type="checkbox" id="t_titletag" style="width:auto">
+    Add a role-aligned tag to my job titles — e.g. “Performance Engineer (QA &amp; Test Automation)” (keeps your real title)
+  </label>
   <div class="field"><label class="fl">Job description</label>
     <textarea id="t_jd" rows="8" placeholder="Paste the full job description here..."></textarea></div>
 
@@ -801,6 +805,26 @@ function variantBullets(company, archId){
   const c=(company||'').toLowerCase().trim();
   return (EXP_VARIANTS[c] && archId && EXP_VARIANTS[c][archId]) ? EXP_VARIANTS[c][archId] : null;
 }
+// Truthful, functional descriptors appended to real titles when the toggle is on.
+const TITLE_TAGS={
+  performance:'Performance & NFR',
+  automation:'QA & Test Automation',
+  api:'API & Integration Testing',
+  lead:'Quality Engineering',
+  manual:'Functional & Regression QA',
+  reliability:'Reliability Engineering',
+  data:'Data & ETL Testing',
+  perfauto:'Automation & Performance'
+};
+function taggedTitle(title, arch){
+  const on=document.getElementById('t_titletag') && document.getElementById('t_titletag').checked;
+  if(!on || !arch || !TITLE_TAGS[arch.id]) return title;
+  const tag=TITLE_TAGS[arch.id];
+  const firstWord=(tag.split(/\W+/)[0]||'').toLowerCase();
+  // skip if the real title already conveys it (e.g. don't tag a Performance title with "Performance")
+  if(firstWord && (title||'').toLowerCase().includes(firstWord)) return title;
+  return `${title} (${tag})`;
+}
 
 function detectArch(jd, forced){
   if(forced && forced!=='auto'){ const a=ARCHETYPES.find(x=>x.id===forced); if(a) return a; }
@@ -853,7 +877,7 @@ function offlineTailor(profile, jd, forced){
       || (Array.isArray(e.bullets)?e.bullets:(e.bullets||'').split('\n'));
     const lines=base.map(b=>(b||'').trim()).filter(Boolean)
       .map(b=>({text:b, sc:bulletScore(b, kwSet)})).sort((a,b)=>b.sc-a.sc);
-    return {title:e.title, company:e.company, dates:e.dates,
+    return {title:taggedTitle(e.title, arch), company:e.company, dates:e.dates,
       bullets:lines.map(l=>l.text), ov:lines.reduce((s,l)=>s+l.sc,0)};
   }).sort((a,b)=>b.ov-a.ov);
 
