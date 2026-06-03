@@ -164,6 +164,7 @@ textarea{resize:vertical;line-height:1.55}
 .resume ul{margin:6px 0 0;padding-left:18px}
 .resume li{margin-bottom:5px}
 .resume .rskills{display:flex;flex-wrap:wrap;gap:7px}
+.resume mark.rmk{background:#f3e1bd;color:#2a2114;border-radius:3px;padding:0 3px}
 .resume .rskill{background:#efe5d2;border-radius:6px;padding:3px 10px;font-size:12.5px}
 
 .muted{color:var(--muted)}
@@ -291,6 +292,18 @@ ol.steps li{margin-bottom:10px}
     keywords you're missing, and reshape your resume around what this employer is asking for.</p>
 
   <div class="field"><label class="fl">Job title @ company (optional)</label><input id="t_title" placeholder="Senior Product Designer @ Canva"></div>
+  <div class="field"><label class="fl">Resume template (auto-detected from the job description)</label>
+    <select id="t_template">
+      <option value="auto">Auto-detect (recommended)</option>
+      <option value="performance">Performance Engineer</option>
+      <option value="automation">Test Automation / SDET</option>
+      <option value="api">API / Integration Test</option>
+      <option value="lead">QA / Test Lead</option>
+      <option value="manual">Manual / Functional QA</option>
+      <option value="reliability">SRE / Reliability</option>
+      <option value="data">Data / ETL Test</option>
+      <option value="perfauto">Performance + Automation (Playwright)</option>
+    </select></div>
   <div class="field"><label class="fl">Job description</label>
     <textarea id="t_jd" rows="8" placeholder="Paste the full job description here..."></textarea></div>
 
@@ -401,7 +414,7 @@ const DEFAULT_PROFILE = {
   link:'https://www.linkedin.com/in/pawan-sinha-b5a356b6/',
   edu:'Bachelor of Computer Engineering — KLS GIT, Belgaum | 2009 – 2013',
   summary:'Lead Performance Engineer with over 10 years of hands-on experience across the full performance testing lifecycle — strategy, tooling, execution, and bottleneck diagnosis. Deep expertise with k6, JMeter, Gatling, and LoadRunner across large-scale banking, payments, and financial platforms. Built a proprietary AI-powered performance testing framework combining OpenAPI-driven code generation, GitLab CI/CD, GitLab Duo scenario generation, and real-time observability via Grafana, InfluxDB, and Kibana. Skilled at infrastructure-level diagnosis using Dynatrace APM, thread and heap dump analysis, and system metrics.',
-  skills:'k6, JMeter, Gatling, LoadRunner, Performance testing, Load testing, Stress testing, Soak testing, Endurance testing, Capacity planning, Bottleneck analysis, SLA validation, Dynatrace, Grafana, InfluxDB, Kibana, New Relic, Splunk, GitLab CI/CD, GitLab Duo, GitHub Copilot, Jenkins, Docker, Kubernetes, Shell scripting, Git, OpenAPI/Swagger, REST API testing, Test automation, Java, JavaScript, GCP, AWS, Mentoring',
+  skills:'k6, JMeter, Gatling, LoadRunner, Performance testing, Load testing, Stress testing, Soak testing, Endurance testing, Capacity planning, Bottleneck analysis, SLA validation, Dynatrace, Grafana, InfluxDB, Kibana, New Relic, Splunk, Playwright, Test automation, GitLab CI/CD, GitLab Duo, GitHub Copilot, Jenkins, Docker, Kubernetes, Shell scripting, Git, OpenAPI/Swagger, REST API testing, Java, JavaScript, GCP, AWS, Mentoring',
   exp:[
     { title:'Lead Performance Engineer', company:'The Lottery Corporation', dates:'Jan 2025 – Present',
       bullets:[
@@ -670,27 +683,106 @@ function keywords(text){
   });
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
 }
-function offlineTailor(profile, jd){
-  const top=keywords(jd).slice(0,28);
+/* ---- Testing role archetypes: detected from JD keywords, no AI ---- */
+const ARCHETYPES=[
+  {id:'performance', label:'Performance Engineer',
+   sig:['performance','load','stress','soak','endurance','jmeter','k6','gatling','loadrunner','throughput','latency','scalability','capacity','tuning','bottleneck','dynatrace','apm','observability','nfr','volume','non-functional'],
+   boost:['Performance testing','JMeter','k6','Gatling','LoadRunner','Load testing','Stress testing','Soak testing','Capacity planning','Bottleneck analysis','Dynatrace','Grafana','InfluxDB'],
+   angle:'performance, load and stress testing across high-scale platforms'},
+  {id:'automation', label:'Test Automation / SDET',
+   sig:['automation','automated','sdet','selenium','playwright','cypress','webdriver','framework','rest assured','restassured','bdd','cucumber','testng','junit','pytest','ci/cd','pipeline','java','python','javascript','page object'],
+   boost:['Test automation','Selenium','Java','JavaScript','GitLab CI/CD','Jenkins','OpenAPI/Swagger','REST API testing','Git','Docker'],
+   angle:'designing and scaling automated test frameworks within CI/CD pipelines'},
+  {id:'api', label:'API / Integration Test',
+   sig:['api','apis','rest','soap','postman','swagger','openapi','microservice','microservices','integration','contract','endpoint','json','graphql'],
+   boost:['REST API testing','OpenAPI/Swagger','Postman','Test automation','GitLab CI/CD','k6'],
+   angle:'API and integration testing across microservice architectures'},
+  {id:'lead', label:'QA / Test Lead',
+   sig:['lead','leading','leadership','manager','management','strategy','mentor','mentoring','stakeholder','governance','roadmap','principal','head of','quality engineering','delivery','team'],
+   boost:['Mentoring','Test planning','SLA validation','Performance testing','GitLab CI/CD','Capacity planning'],
+   angle:'leading quality-engineering strategy, delivery and teams'},
+  {id:'manual', label:'Manual / Functional QA',
+   sig:['manual','functional','regression','exploratory','test case','test cases','uat','user acceptance','defect','scenario','scenarios','test plan','black box'],
+   boost:['Manual testing','Test planning','Regression testing','Defect management','SQL'],
+   angle:'functional and regression testing with rigorous test design'},
+  {id:'reliability', label:'SRE / Reliability',
+   sig:['reliability','sre','resilience','chaos','slo','sli','uptime','monitoring','observability','incident','site reliability'],
+   boost:['Dynatrace','Grafana','InfluxDB','Kibana','Performance testing','Load testing','Bottleneck analysis'],
+   angle:'reliability and resilience engineering backed by deep observability'},
+  {id:'data', label:'Data / ETL Test',
+   sig:['etl','data warehouse','data pipeline','sql','dataset','ingestion','bigquery','snowflake','data quality','data validation'],
+   boost:['SQL','Test automation','REST API testing','Performance testing'],
+   angle:'data and pipeline validation with strong SQL'},
+  {id:'perfauto', label:'Performance + Automation (Playwright)',
+   sig:['performance','load','stress','jmeter','k6','gatling','loadrunner','throughput','latency','playwright','automation','automated','ci/cd','pipeline'],
+   boost:['Performance testing','JMeter','k6','Gatling','LoadRunner','Load testing','Stress testing','Capacity planning','Bottleneck analysis','Dynatrace','Grafana','Playwright','Test automation','GitLab CI/CD','JavaScript','Java'],
+   angle:'performance, load and stress testing, complemented by hands-on test automation in Playwright (2–3 years)'}
+];
+function detectArch(jd, forced){
+  if(forced && forced!=='auto'){ const a=ARCHETYPES.find(x=>x.id===forced); if(a) return a; }
+  const jdl=' '+jd.toLowerCase()+' ';
+  // base detection over the focused (non-hybrid) archetypes
+  let best=null, bestScore=0;
+  ARCHETYPES.filter(a=>a.id!=='perfauto').forEach(a=>{
+    let s=0; a.sig.forEach(t=>{ if(new RegExp('\\b'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).test(jdl)) s++; });
+    if(s>bestScore){ bestScore=s; best=a; }
+  });
+  // pick the hybrid only when the JD genuinely asks for BOTH performance AND automation/Playwright
+  const perfHit=/\b(performance|load|stress|soak|jmeter|k6|gatling|loadrunner|throughput|latency|nfr)\b/.test(jdl);
+  const autoHit=/\b(playwright|automation|automated|sdet|framework|cypress|selenium)\b/.test(jdl);
+  if(perfHit && autoHit) return ARCHETYPES.find(a=>a.id==='perfauto');
+  return best;
+}
+
+function bulletScore(b, kwSet){
+  const bl=b.toLowerCase(); let s=0;
+  kwSet.forEach(k=>{ if(new RegExp('\\b'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).test(bl)) s++; });
+  return s;
+}
+function offlineTailor(profile, jd, forced){
+  const arch=detectArch(jd, forced);
+  const jdl=jd.toLowerCase();
+  const top=keywords(jd).slice(0,32);
   const skills=(profile.skills||'').split(',').map(s=>s.trim()).filter(Boolean);
   const profText=(profile.summary+' '+profile.skills+' '+(profile.exp||[]).map(e=>e.title+' '+e.bullets).join(' ')).toLowerCase();
   const hits=top.filter(t=>profText.includes(t));
   const miss=top.filter(t=>!profText.includes(t)).slice(0,10);
-  const score=Math.min(99, Math.round( (hits.length/Math.max(8,Math.min(top.length,20)))*100 ));
-  // reorder skills: matched first
-  const jdl=jd.toLowerCase();
-  skills.sort((a,b)=> (jdl.includes(b.toLowerCase())?1:0)-(jdl.includes(a.toLowerCase())?1:0));
-  // rank experiences by overlap
+  const score=Math.min(99, Math.round((hits.length/Math.max(8,Math.min(top.length,20)))*100));
+
+  // skills order: archetype-boosted (that you have) → JD-matched → the rest
+  const boost=(arch?arch.boost:[]).map(b=>b.toLowerCase());
+  const isBoost=s=>boost.includes(s.toLowerCase());
+  const matched=skills.filter(s=>{ const sl=s.toLowerCase();
+    return jdl.includes(sl) || sl.split(/\s+/).some(w=>w.length>2 && jdl.includes(w)); });
+  const boosted=skills.filter(isBoost);
+  const matchedNB=matched.filter(s=>!isBoost(s));
+  const rest=skills.filter(s=>!isBoost(s)&&!matched.includes(s));
+  const orderedSkills=[...new Set([...boosted, ...matchedNB, ...rest])];
+
+  // keywords used to score/highlight bullets (JD terms + matched skills + archetype signature)
+  const kwSet=new Set([...top, ...matched.flatMap(s=>s.toLowerCase().split(/\s+/)), ...(arch?arch.sig:[])]
+    .filter(w=>w&&w.length>2&&!STOP.has(w)));
+
   const exp=(profile.exp||[]).map(e=>{
-    const t=(e.title+' '+e.bullets).toLowerCase();
-    const ov=top.filter(k=>t.includes(k)).length;
-    return {...e, ov};
+    const lines=(Array.isArray(e.bullets)?e.bullets:(e.bullets||'').split('\n')).map(b=>b.trim()).filter(Boolean)
+      .map(b=>({text:b, sc:bulletScore(b, kwSet)})).sort((a,b)=>b.sc-a.sc);
+    return {title:e.title, company:e.company, dates:e.dates,
+      bullets:lines.map(l=>l.text), ov:lines.reduce((s,l)=>s+l.sc,0)};
   }).sort((a,b)=>b.ov-a.ov);
-  const role=(document.getElementById('t_title').value.split('@')[0].trim())||profile.role||'this role';
-  const summary = profile.summary
-    ? profile.summary + (hits.length?` Strengths aligned to this role: ${hits.slice(0,6).join(', ')}.`:'')
-    : `${profile.role||'Professional'} with strengths in ${hits.slice(0,6).join(', ')||skills.slice(0,5).join(', ')}.`;
-  return {score, hits:hits.slice(0,14), miss, skills, exp, summary};
+
+  // archetype-flavoured summary, assembled from your real facts
+  const role=(document.getElementById('t_title').value.split('@')[0].trim())||(arch?arch.label:'')||profile.role||'Professional';
+  const ym=(profile.summary||'').match(/(\d+)\+?\s*years?/i);
+  const years=ym?`${ym[1]}+ years`:'';
+  const tops=matched.slice(0,3), more=matched.slice(3,6);
+  let summary=role+(years?` with ${years} of experience`:'');
+  summary+= arch ? ` focused on ${arch.angle}.` : (tops.length?` specialising in ${tops.join(', ')}.`:'.');
+  if(tops.length) summary+=` Core strengths include ${tops.join(', ')}${more.length?', '+more.join(', '):''}.`;
+  const focus=hits.filter(h=>!tops.join(' ').toLowerCase().includes(h)).slice(0,4);
+  if(focus.length) summary+=` Aligned to this role's emphasis on ${focus.join(', ')}.`;
+
+  return {score, hits:hits.slice(0,14), miss, skills:orderedSkills, exp, summary,
+    kw:[...kwSet], archLabel: arch?arch.label:'General testing'};
 }
 async function aiTailor(profile, jd, key){
   const sys=`You tailor resumes. Return ONLY valid JSON, no markdown, shaped exactly as:
@@ -715,9 +807,10 @@ document.getElementById('genBtn').onclick=async()=>{
   let profile=gatherProfile();
   if(!profile.name){ status.innerHTML='Add your name in the Profile tab (01) first.'; return; }
 
-  const analysis=offlineTailor(profile, jd);
+  const forced=document.getElementById('t_template').value;
+  const analysis=offlineTailor(profile, jd, forced);
   const key=document.getElementById('t_key').value.trim();
-  let content={summary:analysis.summary, skills:analysis.skills, experience:analysis.exp};
+  let content={summary:analysis.summary, skills:analysis.skills, experience:analysis.exp, kw:analysis.kw};
 
   if(key){
     status.innerHTML='<span class="spinner"></span> Claude is rewriting your resume…';
@@ -726,11 +819,15 @@ document.getElementById('genBtn').onclick=async()=>{
       content={
         summary: ai.summary||analysis.summary,
         skills: (ai.skills&&ai.skills.length)?ai.skills:analysis.skills,
-        experience: (ai.experience&&ai.experience.length)?ai.experience:analysis.exp
+        experience: (ai.experience&&ai.experience.length)?ai.experience:analysis.exp,
+        kw: analysis.kw
       };
-      status.textContent='Tailored with AI.';
+      status.textContent='Tailored with AI — summary and bullets rewritten for this role.';
     }catch(e){ status.textContent='AI step failed ('+e.message+') — used offline tailoring instead.'; }
-  } else { status.textContent='Tailored offline (no key used).'; }
+  } else {
+    const how = forced==='auto' ? `Detected role type: ${analysis.archLabel}` : `Template: ${analysis.archLabel}`;
+    status.innerHTML=`<b style="color:var(--accent2)">${how}.</b> Summary rebuilt for this role, skills &amp; bullets re-ordered by relevance, matched keywords highlighted.`;
+  }
 
   // render score + keywords
   ringSet(analysis.score);
@@ -744,19 +841,29 @@ document.getElementById('genBtn').onclick=async()=>{
   document.getElementById('tailorOut').scrollIntoView({behavior:'smooth'});
 };
 
+function hl(text, kw){
+  let s=esc(text);
+  if(!kw||!kw.length) return s;
+  [...kw].filter(k=>k&&k.length>2).sort((a,b)=>b.length-a.length).forEach(k=>{
+    const re=new RegExp('\\b('+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')\\b','ig');
+    s=s.replace(re,'\u0001$1\u0002'); // placeholder so we don't re-match inside tags
+  });
+  return s.replace(/\u0001/g,'<mark class="rmk">').replace(/\u0002/g,'</mark>');
+}
 function renderResume(p, c){
+  const kw=c.kw||[];
   const contact=[p.email,p.phone,p.loc,p.link].filter(Boolean).join('  ·  ');
   const skills=(c.skills||[]).map(s=>`<span class="rskill">${esc(s)}</span>`).join('');
   const exp=(c.experience||[]).map(e=>{
     const bl=(Array.isArray(e.bullets)?e.bullets:(e.bullets||'').split('\n')).map(b=>b.trim()).filter(Boolean);
     return `<div class="rjob"><div class="rh"><b>${esc(e.title||'')}${e.company?' — '+esc(e.company):''}</b>
       <span class="rdate">${esc(e.dates||'')}</span></div>
-      <ul>${bl.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`;
+      <ul>${bl.map(b=>`<li>${hl(b,kw)}</li>`).join('')}</ul></div>`;
   }).join('');
   document.getElementById('resume').innerHTML=`
     <h2>${esc(p.name||'Your Name')}</h2>
     <div class="rcontact">${esc(contact)}</div>
-    ${c.summary?`<div class="rsec">Summary</div><p>${esc(c.summary)}</p>`:''}
+    ${c.summary?`<div class="rsec">Summary</div><p>${hl(c.summary,kw)}</p>`:''}
     ${skills?`<div class="rsec">Skills</div><div class="rskills">${skills}</div>`:''}
     ${exp?`<div class="rsec">Experience</div>${exp}`:''}
     ${p.edu?`<div class="rsec">Education</div><p>${esc(p.edu)}</p>`:''}`;
