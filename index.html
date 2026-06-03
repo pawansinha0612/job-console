@@ -547,9 +547,9 @@ function normAdzuna(r){
 }
 async function searchAdzuna(kw, loc){
   const {id,key,proxy}=adzKeys();
-  // Broad fetch (any of the words) so the relevance filter has a real pool to rank from
+  // Broad within IT only, ranked by relevance — keeps the pool tech/testing-focused
   const params=`what_or=${encodeURIComponent(kw||'test')}&where=${encodeURIComponent(loc||'Melbourne')}`
-    +`&results_per_page=50&max_days_old=45&sort_by=date`;
+    +`&results_per_page=50&max_days_old=45&sort_by=relevance&category=it-jobs`;
   let target;
   if(proxy){
     target=proxy.replace(/\/+$/,'')+'?'+params;
@@ -625,9 +625,13 @@ function relevance(j, kwTerms){
 function rankAndFilter(jobs, kw, strict){
   const kwTerms=(kw||'').toLowerCase().split(/\s+/).filter(Boolean);
   const scored=jobs.map(j=>({j, r:relevance(j, kwTerms)}));
-  const kept = strict ? scored.filter(x=>x.r.titleScore>0 || x.r.descScore>=4) : scored;
-  kept.sort((a,b)=>b.r.score-a.r.score);
-  return kept.map(x=>x.j);
+  scored.sort((a,b)=>b.r.score-a.r.score);
+  if(strict){
+    const kept=scored.filter(x=>x.r.titleScore>0 || x.r.descScore>=2);
+    // never show an empty page when results exist — fall back to the ranked list
+    if(kept.length) return kept.map(x=>x.j);
+  }
+  return scored.map(x=>x.j);
 }
 function renderJobs(jobs, caption){
   const out=document.getElementById('results');
